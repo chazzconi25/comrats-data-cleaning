@@ -7,13 +7,13 @@ def fixDates(x):
     return x[4:6] + x[:4] + x[10:] + x[6:10]
 
 # Read in input for csv filename
-csvFile = input("Please input the name of comrats csv file: ")
+# csvFile = input("Please input the name of comrats csv file: ")
 
 # Read in raw data csv to dataframe
-df = pandas.read_csv(csvFile, dtype=str)
+df = pandas.read_csv("test2.csv", dtype=str)
 
 # Clean data by removing plebes and changing all last names to uppercase
-df.rename(columns={df.columns[1]:'email', df.columns[2]:'last'}, inplace = True)
+df.rename(columns={df.columns[1]:'email', df.columns[2]:'last', df.columns[4]:'social'}, inplace = True)
 df = df[df['email'].str[1:3] != '26']
 df['last'] = df['last'].str.upper()
 dfClean = df[['last']].copy()
@@ -45,20 +45,27 @@ dfClean = dfCleanTemp
 dfClean = dfClean.replace({'/','-'},['']*2, regex=True)
 dfClean.iloc[:,range(1,len(dfClean.columns),2)] = dfClean.iloc[:,range(1,len(dfClean.columns),2)].applymap(fixDates)
 
-# Create a new dataframe to store all last names and formatted missing dates
+# Add SSNs to dfClean
+dfClean.insert(loc=0,
+          column='social',
+          value=df['social'])
+
+# Create a new dataframe to store all last names, formatted missing dates, and SSNs
 allDates = pandas.DataFrame (columns=['last','date'])
 
-# index though cleaned data and make dataframes for each mid with their missing dates
+# index though cleaned data and make dataframes for each mid with their missing dates and SSN
 for index in range(len(dfClean.index)):
     last = [str(dfClean['last'].values[index])]*16
-    missing = dfClean.iloc[index,range(1,len(dfClean.columns),2)].values
-    valid = dfClean.iloc[index,range(2,len(dfClean.columns),2)].values
-    oneMid = pandas.DataFrame ({'last':last, 'missing':missing, 'valid':valid})
+    social = [str(dfClean['social'].values[index])]*16
+    # this needs to be cleaned up - sorry this is confusing to me, not sure why I did it like this
+    missing = dfClean.iloc[index,range(2,len(dfClean.columns),2)].values
+    valid = dfClean.iloc[index,range(3,len(dfClean.columns),2)].values
+    oneMid = pandas.DataFrame ({'last':last, 'missing':missing, 'valid':valid, 'social':social})
     # remove all invalid leave periods 
     oneMid = oneMid[oneMid['valid'] == 'Yes']
     oneMid = oneMid[oneMid['missing'] != 'nan']
     # add formatted date column
-    oneMid['date'] = "4003" + oneMid['last'].str[0:6] + oneMid['missing']
+    oneMid['date'] = "4003" + oneMid['social'] + oneMid['last'].str[0:6] + oneMid['missing']
     # Add last name and dates of this mid to full list
     allDates = pandas.concat([allDates, oneMid[['last','date']]])
 
