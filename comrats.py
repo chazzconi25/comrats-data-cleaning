@@ -1,16 +1,31 @@
 import pandas
 import numpy
+import datetime
+
+comratsValuesDict = { 2019 : 12.30, 2020 : 12.40, 2021 : 12.90, 2022 : 13.55, 2023 : 15.00}
 
 # Function to change dates from MMDDYY to YYMMDD 
 def fixDates(x):
     x = str(x)
     return x[4:6] + x[:4] + x[10:] + x[6:10]
 
+# This even works in the edgecase that somone took over two years of continuous leave
+def total(start, end):
+    total = 0
+    while start.year != end.year:
+        delta = (datetime.datetime(start.year,12,31) - start).days + 1
+        total += comratsValuesDict[int(start.year)]*delta
+        start = datetime.datetime(start.year + 1,1,1)
+    total += comratsValuesDict[int(start.year)]*((end - start).days +1)
+    return total
+
+
+
 # Read in input for csv filename
 # csvFile = input("Please input the name of comrats csv file: ")
 
 # Read in raw data csv to dataframe
-df = pandas.read_csv("test2.csv", dtype=str)
+df = pandas.read_csv("COMRATS.csv", dtype=str)
 
 # Clean data by removing plebes and changing all last names to uppercase
 df.rename(columns={df.columns[1]:'email', df.columns[2]:'last', df.columns[4]:'social'}, inplace = True)
@@ -52,22 +67,28 @@ dfClean.insert(loc=0,
 
 # Create a new dataframe to store all last names, formatted missing dates, and SSNs
 allDates = pandas.DataFrame (columns=['last','date'])
-
 # index though cleaned data and make dataframes for each mid with their missing dates and SSN
 for index in range(len(dfClean.index)):
-    last = [str(dfClean['last'].values[index])]*16
-    social = [str(dfClean['social'].values[index])]*16
+    last = [str(dfClean['last'].values[34])]*16
+    social = [str(dfClean['social'].values[34])]*16
     # this needs to be cleaned up - sorry this is confusing to me, not sure why I did it like this
-    missing = dfClean.iloc[index,range(2,len(dfClean.columns),2)].values
-    valid = dfClean.iloc[index,range(3,len(dfClean.columns),2)].values
+    missing = dfClean.iloc[34,range(2,len(dfClean.columns),2)].values
+    valid = dfClean.iloc[34,range(3,len(dfClean.columns),2)].values
     oneMid = pandas.DataFrame ({'last':last, 'missing':missing, 'valid':valid, 'social':social})
     # remove all invalid leave periods 
     oneMid = oneMid[oneMid['valid'] == 'Yes']
     oneMid = oneMid[oneMid['missing'] != 'nan']
+    oneMid = oneMid[oneMid['missing'].str.len() == 12]
+
+    oneMid['start'] = pandas.to_datetime(oneMid['missing'].str[:6], format="%y%m%d")
+    oneMid['end'] = pandas.to_datetime(oneMid['missing'].str[6:], format="%y%m%d")
+    oneMid['total'] = oneMid.apply(lambda x: total(x['start'], x['end']), axis=1)
     # add formatted date column
+    
     oneMid['date'] = "4003" + oneMid['social'] + oneMid['last'].str[0:6] + oneMid['missing']
     # Add last name and dates of this mid to full list
     allDates = pandas.concat([allDates, oneMid[['last','date']]])
+
 
 # Create two data frames for different last name sizes
 shortLN = allDates[allDates['last'].str.len() < 5]
@@ -78,6 +99,6 @@ shortLN['date'].to_csv('shortLNCOMRATS.csv', header = False, index = False)
 longLN['date'].to_csv('longLNCOMRATS.csv', header = False, index = False)
 
 # Print dataframes to console
-print(shortLN)
-print(longLN)
+#print(shortLN)
+#print(longLN)
 
