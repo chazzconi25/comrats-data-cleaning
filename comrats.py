@@ -64,7 +64,7 @@ dfClean.iloc[:,range(1,len(dfClean.columns),2)] = dfClean.iloc[:,range(1,len(dfC
 dfClean.insert(loc=0,
           column='social',
           value=df['social'])
-
+print(dfClean)
 # Create a new dataframe to store all last names, formatted missing dates, and SSNs
 allDates = pandas.DataFrame (columns=['last','date'])
 # index though cleaned data and make dataframes for each mid with their missing dates and SSN
@@ -78,7 +78,6 @@ for index in range(len(dfClean.index)):
     # remove all invalid leave periods 
     oneMid = oneMid[oneMid['valid'] == 'Yes']
     oneMid = oneMid[oneMid['missing'] != 'nan']
-    oneMid = oneMid[oneMid['missing'].str.len() == 12]
 
     oneMid['start'] = pandas.to_datetime(oneMid['missing'].str[:6], format="%y%m%d")
     oneMid['end'] = pandas.to_datetime(oneMid['missing'].str[6:], format="%y%m%d")
@@ -95,8 +94,8 @@ shortLN = allDates[allDates['last'].str.len() < 5]
 longLN = allDates[allDates['last'].str.len() >= 5]
 
 # Create csv files with only dates from dataframes
-shortLN['date'].to_csv('shortLNCOMRATS.csv', header = False, index = False)
-longLN['date'].to_csv('longLNCOMRATS.csv', header = False, index = False)
+#shortLN['date'].to_csv('shortLNCOMRATS.csv', header = False, index = False)
+#longLN['date'].to_csv('longLNCOMRATS.csv', header = False, index = False)
 
 # Print dataframes to console
 #print(shortLN)
